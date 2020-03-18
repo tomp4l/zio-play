@@ -11,23 +11,18 @@ import zio.internal.Platform
 
 @Singleton
 class BeerController @Inject()
-(val controllerComponents: ControllerComponents, val client: WSClient) extends ZioController {
-
-  private val httpBeers = new HttpBeerRepository(client).service
-
-  implicit val runtime = Runtime.default
+(val controllerComponents: ControllerComponents, val client: WSClient)
+(implicit val runtime: ZioRuntime) extends ZioController {
 
   def getBeerById(id: String): Action[AnyContent] = Action.zio {
     val beerId = BeerId(id.toInt)
     val beer = BeerRepository.getBeer(beerId)
 
-    val response = beer.fold({
+    beer.fold({
       case BeerRepository.ServiceUnavailable => InternalServerError("Service unavailable")
     }, {
       case Some(Beer(name)) => Ok(name)
       case None => NotFound("")
     })
-
-    response.provideLayer(httpBeers)
   }
 }
