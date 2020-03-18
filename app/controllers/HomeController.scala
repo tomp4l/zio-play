@@ -9,13 +9,11 @@ import zio.{IO, Runtime}
  * application's home page.
  */
 @Singleton
-class HomeController @Inject()(val controllerComponents: ControllerComponents) extends BaseController {
+class HomeController @Inject()(val controllerComponents: ControllerComponents) extends ZioController {
 
-  def io = IO.succeed(Ok("zio"))
+  private val io = IO.succeed(Ok("zio"))
 
-  val runtime = Runtime.default
+  implicit private val runtime: Runtime[Unit] = Runtime.default
 
-  def myFirstZio() = Action.async({
-    runtime.unsafeRun(io.toFuture)
-  })
+  def myFirstZio(): Action[AnyContent] = Action.zio(io)
 }

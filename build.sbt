@@ -10,6 +10,7 @@ scalaVersion := "2.13.1"
 libraryDependencies += guice
 libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "5.0.0" % Test
 libraryDependencies += "dev.zio" %% "zio" % "1.0.0-RC18"
+libraryDependencies += ws
 
 // Adds additional packages into Twirl
 //TwirlKeys.templateImports += "com.dekopay.controllers._"
