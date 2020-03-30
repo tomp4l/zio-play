@@ -1,16 +1,17 @@
 package infrastructure
 
 import model.BeerRepository._
+import model.{BeerRepository, ServiceUnavailable}
 import play.api.libs.ws.{WSClient, WSResponse}
-import zio.{Has, IO, ZIO, ZLayer}
+import zio.{IO, ZIO, ZLayer}
 
 class HttpBeerRepository(client: WSClient) {
 
-  val service: ZLayer[Any, Nothing, Has[Service]] = ZLayer.succeed(
+  val service: ZLayer[Any, Nothing, BeerRepository] = ZLayer.succeed(
     new Service {
       private val baseUrl = "https://api.punkapi.com/v2/"
 
-      override def getBeer(beerId: BeerId): IO[Error, Option[Beer]] =
+      override def getBeer(beerId: BeerId): IO[model.Error, Option[Beer]] =
         ZIO.fromFuture(_ => client.url(s"${baseUrl}beers/${beerId.id}").get())
           .map(response =>
             response.status match {
@@ -22,10 +23,16 @@ class HttpBeerRepository(client: WSClient) {
           .mapError(_ => ServiceUnavailable)
           .someOrFail(ServiceUnavailable)
 
-      override def getBeers: IO[Error, Seq[Beer]] =
+      override def getBeers: IO[model.Error, Seq[Beer]] =
         ZIO.fromFuture(_ => client.url(baseUrl + "beers").get())
           .map(response => Seq())
           .mapError(t => ServiceUnavailable)
+
+      override def getKnownBeer(beerId: KnownBeerId): ZIO[Any, model.Error, Beer] =
+        getBeer(beerId).flatMap({
+          case Some(beer) => ZIO.succeed(beer)
+          case None => ZIO.fail(ServiceUnavailable)
+        })
     }
   )
 
@@ -35,6 +42,7 @@ class HttpBeerRepository(client: WSClient) {
     val beer = json \ 0
     for {
       name <- (beer \ "name").asOpt[String]
-    } yield Beer(name)
+      id <- (beer \ "id").asOpt[Int]
+    } yield Beer(KnownBeerId(id), name)
   }
 }

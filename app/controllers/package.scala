@@ -1,7 +1,7 @@
-import model.BeerRepository
+import model.{BeerRepository, UserRepository}
 import zio.Runtime
 
 package object controllers {
 
-  type ZioRuntime = Runtime[BeerRepository]
+  type ZioRuntime = Runtime[BeerRepository with UserRepository]
 }
